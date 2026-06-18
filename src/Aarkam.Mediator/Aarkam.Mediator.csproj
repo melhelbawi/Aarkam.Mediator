@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<!-- Multi Target -->
+		<TargetFrameworks>net6.0;net8.0;net10.0</TargetFrameworks>
+
+		<!-- Language -->
+		<LangVersion>preview</LangVersion>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<!-- NuGet Package Metadata -->
+		<IsPackable>true</IsPackable>
+		<Version>1.0.0</Version>
+		<Company>Aarkam</Company>
+		<Authors>Mohamed Mohamed Elhelbawi</Authors>
+		<Description>High-performance, lightweight Mediator implementation with minimal allocations and excellent AOT support.</Description>
+		<PackageTags>mediator cqrs mediatr performance</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageOutputPath>C:\Nuget</PackageOutputPath>
+	</PropertyGroup>
+
+	<!-- Common packages for all target frameworks -->
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+	</ItemGroup>
+
+	<!-- net6.0 specific: Polyfill for FrozenDictionary (not available natively) -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+		<PackageReference Include="System.Collections.Immutable" Version="8.0.0" />
+	</ItemGroup>
+	<!-- net8.0 and net10.0 use native FrozenDictionary (best performance) -->
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net10.0'">
+		<!-- No extra package needed - FrozenDictionary is built-in -->
+	</ItemGroup>
+
+</Project>

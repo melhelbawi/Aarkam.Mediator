@@ -1,2 +1,5 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Aarkam.Mediator/Aarkam.Mediator.csproj" Id="0e14be82-9c87-4770-847a-eae3b92205c2" />
+  </Folder>
 </Solution>

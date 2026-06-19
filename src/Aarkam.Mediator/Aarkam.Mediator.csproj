@@ -20,8 +20,9 @@
 
 		<!-- Project and Repository URLs -->
 		<PackageProjectUrl>https://github.com/melhelbawi/Aarkam.Mediator</PackageProjectUrl>
-		<RepositoryUrl>https://github.com</RepositoryUrl>
+		<RepositoryUrl>https://github.com/melhelbawi/Aarkam.Mediator</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
+
 		<!-- Source Link & Debugging Symbols -->
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -37,21 +38,7 @@
 	<PropertyGroup>
 		<Copyright>Copyright © $([System.DateTime]::Now.Year) Aarkam</Copyright>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
-
-	<ItemGroup>
-		<None Include="LICENSE"
-			  Pack="true"
-			  PackagePath=""
-			  Visible="false" />
-
-		<None Include="README.md"
-			  Pack="true"
-			  PackagePath=""
-			  Visible="false" />
-	</ItemGroup>
 	<!-- net6.0 specific: Polyfill for FrozenDictionary (not available natively) -->
 	<ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />

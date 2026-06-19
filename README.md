@@ -27,10 +27,6 @@ AarkamMediator completely bypasses dynamic runtime reflection loop assembly, all
 
 ## 📦 Installation
 
-You can install **Aarkam.Mediator** from [nuget.org](https://www.nuget.org/packages/Aarkam.Mediator/).
-
-## 📦 Installation
-
 You can install **Aarkam.Mediator** from [nuget.org](https://nuget.org).
 
 ### .NET CLI

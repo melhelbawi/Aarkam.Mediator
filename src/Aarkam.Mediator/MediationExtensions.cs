@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Frozen;
 
 namespace Aarkam.Mediator
@@ -49,12 +49,12 @@ namespace Aarkam.Mediator
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray())
                 .ToFrozenDictionary();
 
-            // Register the immutable Mediator engine core as a Singleton
-            services.AddSingleton<IMediator>(sp => new Mediator(sp, frozenRequestRegistry, frozenNotificationRegistry));
+            // Register the Mediator engine core as Transient so it resolves handlers from the caller's active scope
+            services.AddTransient<IMediator>(sp => new Mediator(sp, frozenRequestRegistry, frozenNotificationRegistry));
 
-            // Bridge convenience interfaces directly to the identical singleton engine instance
-            services.AddSingleton<ISender>(sp => sp.GetRequiredService<IMediator>());
-            services.AddSingleton<IPublisher>(sp => sp.GetRequiredService<IMediator>());
+            // Bridge convenience interfaces directly to the identical transient engine instance
+            services.AddTransient<ISender>(sp => sp.GetRequiredService<IMediator>());
+            services.AddTransient<IPublisher>(sp => sp.GetRequiredService<IMediator>());
 
             return services;
         }

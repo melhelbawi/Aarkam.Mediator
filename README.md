@@ -27,12 +27,60 @@ AarkamMediator completely bypasses dynamic runtime reflection loop assembly, all
 
 ## 📦 Installation
 
-Currently available via direct project reference or source code inclusion. 
+You can install **Aarkam.Mediator** from [nuget.org](https://www.nuget.org/packages/Aarkam.Mediator/).
 
+## 📦 Installation
+
+You can install **Aarkam.Mediator** from [nuget.org](https://nuget.org).
+
+### .NET CLI
 ```bash
-# Add a project reference to your domain architecture layer
-dotnet add reference ../src/Aarkam.Mediation.csproj
+dotnet add package Aarkam.Mediator --version 1.0.3
 ```
+
+### PMC (Package Manager Console)
+```powershell
+Install-Package Aarkam.Mediator -Version 1.0.3
+```
+
+### PackageReference
+Add the following line inside your `.csproj` file:
+```xml
+<PackageReference Include="Aarkam.Mediator" Version="1.0.3" />
+```
+
+### CPM (Central Package Management)
+Add the dependency to your centralized `Directory.Packages.props` file:
+```xml
+<ItemGroup>
+  <PackageVersion Include="Aarkam.Mediator" Version="1.0.3" />
+</ItemGroup>
+```
+
+### Paket CLI
+```bash
+paket add Aarkam.Mediator --version 1.0.3
+```
+
+### Script & Interactive
+For .NET Notebooks, F# Interactive, or C# REPL:
+```csharp
+#r "nuget: Aarkam.Mediator, 1.0.3"
+```
+
+### File-Based Apps
+For classic standalone or single-file setups without modern project files:
+```xml
+<Reference Include="Aarkam.Mediator">
+  <HintPath>..\packages\Aarkam.Mediator.1.0.3\lib\net8.0\Aarkam.Mediator.dll</HintPath>
+</Reference>
+```
+
+### Cake
+```csharp
+#nuget nuget:?package=Aarkam.Mediator&version=1.0.3
+```
+
 
 ## ⏱️ Quick Start
 

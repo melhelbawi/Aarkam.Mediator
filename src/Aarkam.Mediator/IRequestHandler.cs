@@ -1,4 +1,4 @@
-﻿namespace Aarkam.Mediator
+namespace Aarkam.Mediator
 {
     /// <summary>
     /// Defines the execution contract for a single handler that processes a specific request and yields a response.
@@ -58,5 +58,43 @@
         /// <returns>A task representing the completion of the asynchronous void processing operation.</returns>
         /// <exception cref="OperationCanceledException">Thrown if the processing operation is canceled via the <paramref name="cancellationToken"/>.</exception>
         new Task Handle(TRequest request, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Explicit default implementation bridging the void command into the unified generic <see cref="Unit"/> pipeline.
+        /// </summary>
+        async Task<Unit> IRequestHandler<TRequest, Unit>.Handle(TRequest request, CancellationToken cancellationToken)
+        {
+            await Handle(request, cancellationToken).ConfigureAwait(false);
+            return Unit.Value;
+        }
+    }
+
+    /// <summary>
+    /// Base class for void-style command handlers that simplifies handling without returning a payload.
+    /// </summary>
+    /// <typeparam name="TRequest">The request type implementing <see cref="IRequest"/>.</typeparam>
+    public abstract class RequestHandler<TRequest> : IRequestHandler<TRequest>
+        where TRequest : IRequest
+    {
+        Task IRequestHandler<TRequest>.Handle(TRequest request, CancellationToken cancellationToken)
+            => Handle(request, cancellationToken);
+
+        Task<Unit> IRequestHandler<TRequest, Unit>.Handle(TRequest request, CancellationToken cancellationToken)
+            => HandleCore(request, cancellationToken);
+
+        private async Task<Unit> HandleCore(TRequest request, CancellationToken cancellationToken)
+        {
+            await Handle(request, cancellationToken).ConfigureAwait(false);
+            return Unit.Value;
+        }
+
+        /// <summary>
+        /// Handles the void-style command asynchronously.
+        /// </summary>
+        /// <param name="request">The incoming request command.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>A task representing asynchronous execution.</returns>
+        protected abstract Task Handle(TRequest request, CancellationToken cancellationToken = default);
     }
 }
+

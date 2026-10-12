@@ -1,164 +1,268 @@
-# AarkamM.Mediator
+# Aarkam.Mediator
 
-**High-performance, lightweight Mediator implementation for .NET** focused on zero runtime allocations, ultra-low latency, and modern ahead-of-time (AOT) compilation compatibility.
+[![NuGet Version](https://img.shields.io/nuget/v/Aarkam.Mediator.svg?style=flat-square&color=blue)](https://www.nuget.org/packages/Aarkam.Mediator/)
+[![Target Frameworks](https://img.shields.io/badge/.NET-6.0%20%7C%208.0%20%7C%2010.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
-A fast, streamlined alternative to traditional mediation engines that unifies generic, primitive, and void-style request pipelines while eliminating reflection overhead on hot paths.
+**High-performance, lightweight Mediator implementation for .NET** focused on zero runtime allocations, ultra-low latency, and modern Ahead-Of-Time (AOT) compilation compatibility.
 
-## 🚀 Features
+A streamlined alternative to traditional mediation libraries that unifies generic, primitive, and void-style request pipelines while eliminating reflection overhead on hot paths.
 
-- **Zero Allocation on Hot Paths**: Utilizes `FrozenDictionary` lookup registries and strongly-typed structural compilation wrappers to completely eliminate runtime heap allocations.
-- **Native Primitive Optimization**: Zero-boxing penalty when utilizing primitive value types (e.g., `bool`, `int`, `Guid`) as request response payloads.
-- **Unified Void-Style Commands**: Native support for side-effect commands (`IRequest`) utilizing a specialized, zero-allocation `Unit` type under the hood while maintaining a clean language-level `Task` return signature for developers.
-- **Publish-Subscribe Broadcaster**: Decoupled, asynchronous `Publish` mechanics supporting sequential 1:N notification workflows with cooperative loop cancellation guards.
-- **Type-Safe Middleware Pipelines**: Extensible `IPipelineBehavior<TRequest, TResponse>` support built cleanly into generic wrappers, avoiding complex reflection during downstream message routing.
-- **DI Bootstrapper Scan**: Simple integration with `Microsoft.Extensions.DependencyInjection` using modern, reflection-safe factory delegate assignments at application startup.
+---
+
+## 🚀 Key Features
+
+* **Zero-Allocation on Hot Paths**: Leverages `FrozenDictionary` lookup registries and pre-compiled structural execution wrappers to eliminate runtime heap allocations.
+* **Native Primitive Optimization**: Zero-boxing penalty when using primitive value types (`bool`, `int`, `Guid`, etc.) as request response payloads.
+* **Unified Void-Style Commands**: First-class support for void commands (`IRequest`) utilizing a specialized, zero-allocation `Unit` type under the hood while maintaining a clean, language-level `Task` return signature.
+* **Type-Safe Pipeline Middleware**: Extensible `IPipelineBehavior<TRequest, TResponse>` onion architecture executed in exact registration order with cancellation token propagation and zero-allocation fast-paths when no behaviors are configured.
+* **Decoupled Publish-Subscribe**: High-throughput `Publish` mechanics supporting sequential 1:N notification broadcasts with cooperative cancellation guards.
+* **Automated DI Bootstrapping**: Fluent integration with `Microsoft.Extensions.DependencyInjection` via single-line assembly scanning (`AddAarkamMediator`).
+
+---
 
 ## 📊 Performance Profile
 
-AarkamMediator completely bypasses dynamic runtime reflection loop assembly, allowing the .NET runtime to compile direct pass-through execution branches:
+Aarkam.Mediator bypasses dynamic runtime reflection loop assembly, allowing the .NET runtime (JIT and Native AOT) to compile direct pass-through execution branches:
 
-| Method Topology | Mean Latency | Relative Speed | Garbage Collection (Gen 0) | Heap Memory Allocated |
+| Dispatch Topology | Mean Latency | Relative Speed | Allocations (Gen 0) | Heap Memory Allocated |
 |:---|:---|:---|:---|:---|
 | **Direct Method Call** *(Baseline)* | **12.5 ns** | *Baseline* | 0.0000 | **0 B** |
-| **AarkamMediator** | **41.2 ns** | **🚀 ~4.6x Faster** | 0.0000 | **0 B** *(Allocation-Free)* |
+| **Aarkam.Mediator** | **41.2 ns** | **🚀 ~4.6x Faster** | 0.0000 | **0 B** *(Allocation-Free)* |
 | **Traditional MediatR** | **189.6 ns** | *Reference* | 0.0861 | **360 B** |
 
-*(Metrics captured via BenchmarkDotNet micro-benchmarks executing within a high-throughput .NET execution context).*
+*(Benchmarked via BenchmarkDotNet executing on .NET 8.0/10.0 within high-throughput execution contexts).*
+
+---
 
 ## 📦 Installation
 
-You can install **Aarkam.Mediator** from [nuget.org](https://nuget.org).
+Install **Aarkam.Mediator** via the .NET CLI or your package manager of choice:
 
 ### .NET CLI
 ```bash
-dotnet add package Aarkam.Mediator --version 1.0.3
+dotnet add package Aarkam.Mediator
 ```
 
-### PMC (Package Manager Console)
+### Package Manager Console
 ```powershell
-Install-Package Aarkam.Mediator -Version 1.0.3
+Install-Package Aarkam.Mediator
 ```
 
 ### PackageReference
-Add the following line inside your `.csproj` file:
 ```xml
 <PackageReference Include="Aarkam.Mediator" Version="1.0.3" />
 ```
 
-### CPM (Central Package Management)
-Add the dependency to your centralized `Directory.Packages.props` file:
-```xml
-<ItemGroup>
-  <PackageVersion Include="Aarkam.Mediator" Version="1.0.3" />
-</ItemGroup>
-```
-
-### Paket CLI
-```bash
-paket add Aarkam.Mediator --version 1.0.3
-```
-
-### Script & Interactive
-For .NET Notebooks, F# Interactive, or C# REPL:
-```csharp
-#r "nuget: Aarkam.Mediator, 1.0.3"
-```
-
-### File-Based Apps
-For classic standalone or single-file setups without modern project files:
-```xml
-<Reference Include="Aarkam.Mediator">
-  <HintPath>..\packages\Aarkam.Mediator.1.0.3\lib\net8.0\Aarkam.Mediator.dll</HintPath>
-</Reference>
-```
-
-### Cake
-```csharp
-#nuget nuget:?package=Aarkam.Mediator&version=1.0.3
-```
-
+---
 
 ## ⏱️ Quick Start
 
-### 1. Define Messages and Handlers
+### 1. Define Requests and Handlers
 
+#### Generic Request with Response
 ```csharp
-using Aarkam.Mediation;
+using Aarkam.Mediator;
 
-// 1. Data Query returning a primitive boolean
+// Query returning a primitive boolean (zero boxing overhead)
 public record CheckEmailQuery(string Email) : IRequest<bool>;
 
 public class CheckEmailHandler : IRequestHandler<CheckEmailQuery, bool>
 {
-    public Task<bool> Handle(CheckEmailQuery request, CancellationToken ct = default)
+    public Task<bool> Handle(CheckEmailQuery request, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(request.Email == "test@aarkam.com");
     }
 }
+```
 
-// 2. Void Command using the streamlined RequestHandler abstraction
+#### Void-Style Command (Side-effects)
+```csharp
+using Aarkam.Mediator;
+
 public record DeactivateUserCommand(Guid UserId) : IRequest;
 
 public class DeactivateUserHandler : RequestHandler<DeactivateUserCommand>
 {
-    protected override Task Handle(DeactivateUserCommand request, CancellationToken ct = default)
+    protected override Task Handle(DeactivateUserCommand request, CancellationToken cancellationToken = default)
     {
-        // Execute domain state modifications seamlessly here...
-        return Task.CompletedTask; // Look ma, no "return Unit.Value"!
-    }
-}
-
-// 3. Broadcast Event Notification
-public record OrderPlacedEvent(Guid OrderId, decimal Amount) : INotification;
-
-public class NotificationLoggerHandler : INotificationHandler<OrderPlacedEvent>
-{
-    public Task Handle(OrderPlacedEvent notification, CancellationToken ct = default)
-    {
-        Console.WriteLine(\$"Order {notification.OrderId} finalized.");
+        // Business logic here... No "return Unit.Value" needed!
         return Task.CompletedTask;
     }
 }
 ```
 
-### 2. Service Registration
+#### Broadcast Notification (Event)
+```csharp
+using Aarkam.Mediator;
+
+public record OrderPlacedEvent(Guid OrderId, decimal Amount) : INotification;
+
+public class OrderNotificationHandler : INotificationHandler<OrderPlacedEvent>
+{
+    public Task Handle(OrderPlacedEvent notification, CancellationToken cancellationToken = default)
+    {
+        Console.WriteLine($"Order {notification.OrderId} finalized with amount {notification.Amount}.");
+        return Task.CompletedTask;
+    }
+}
+```
+
+---
+
+### 2. Implement Cross-Cutting Pipeline Behaviors (Middleware)
+
+Pipeline behaviors wrap requests in an onion-style execution chain, executing in the exact order they are registered:
+
+```csharp
+using Aarkam.Mediator;
+using System.Diagnostics;
+
+// 1. Performance Measurement Behavior
+public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    public async Task<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        var timer = Stopwatch.StartNew();
+        var response = await next(cancellationToken);
+        timer.Stop();
+
+        if (timer.ElapsedMilliseconds > 500)
+        {
+            Console.WriteLine($"[LONG RUNNING] {typeof(TRequest).Name} took {timer.ElapsedMilliseconds}ms");
+        }
+
+        return response;
+    }
+}
+
+// 2. Logging Behavior
+public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    where TRequest : IRequest<TResponse>
+{
+    public async Task<TResponse> HandleAsync(
+        TRequest request,
+        RequestHandlerDelegate<TResponse> next,
+        CancellationToken cancellationToken)
+    {
+        Console.WriteLine($"[START] Handling {typeof(TRequest).Name}");
+        var response = await next(cancellationToken);
+        Console.WriteLine($"[END] Handled {typeof(TRequest).Name}");
+        return response;
+    }
+}
+```
+
+---
+
+### 3. Service Registration
+
+Register `Aarkam.Mediator` and your behaviors in `Program.cs` / Dependency Injection container:
 
 ```csharp
 using Microsoft.Extensions.DependencyInjection;
-using Aarkam.Mediation;
+using Aarkam.Mediator;
 
 var services = new ServiceCollection();
 
-// Automatically scans target assemblies at boot-time and builds FrozenDictionary engines
-services.AddAarkamMediator(typeof(Program)); 
+// 1. Automatically scan assemblies for Handlers and Notification Subscribers
+services.AddAarkamMediator(typeof(Program));
+
+// 2. Register pipeline behaviors in your intended order of execution
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+services.AddScoped(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
+
+// Or use the fluent extension helper:
+// services.AddPipelineBehavior(typeof(PerformanceBehavior<,>));
 
 var serviceProvider = services.BuildServiceProvider();
 ```
 
-### 3. Usage Context
+---
+
+### 4. Dispatch Messages
+
+Inject [`ISender`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/ISender.cs), [`IPublisher`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IPublisher.cs), or [`IMediator`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IMediator.cs) into your controllers, endpoints, or background services:
 
 ```csharp
-// Resolve clean interfaces based on your architectural design preferences
-var sender = serviceProvider.GetRequiredService<ISender>();
-var publisher = serviceProvider.GetRequiredService<IPublisher>();
+public class UserController
+{
+    private readonly ISender _sender;
+    private readonly IPublisher _publisher;
 
-// Dispatch a generic request returning a value type
-bool emailExists = await sender.Send(new CheckEmailQuery("test@aarkam.com"));
+    public UserController(ISender sender, IPublisher publisher)
+    {
+        _sender = sender;
+        _publisher = publisher;
+    }
 
-// Dispatch a void command
-await sender.Send(new DeactivateUserCommand(Guid.NewGuid()));
+    public async Task Execute()
+    {
+        // 1. Send query and receive typed value
+        bool exists = await _sender.Send(new CheckEmailQuery("test@aarkam.com"));
 
-// Broadcast notifications to all subscribers sequentially
-await publisher.Publish(new OrderPlacedEvent(Guid.NewGuid(), 150.00m));
+        // 2. Send command without return value
+        await _sender.Send(new DeactivateUserCommand(Guid.NewGuid()));
+
+        // 3. Publish notification to all registered handlers sequentially
+        await _publisher.Publish(new OrderPlacedEvent(Guid.NewGuid(), 199.99m));
+    }
+}
 ```
 
-## 🏗️ Architectural Building Blocks
+---
 
-The project structure is split into targeted, highly documented component layers:
-- **`IMediator` (Facade Interface)**: Combines both `ISender` and `IPublisher` capabilities into a unified delivery contract.
-- **`Unit` (Value Type)**: A high-performance, `readonly struct` overriding structural equality operators (`IEquatable`, `IComparable`) to simulate standard void outcomes without generic parameter type-erasure.
-- **`RequestHandlerWrapper`**: The non-generic bridge that handles the discovery and execution of middlewares safely, keeping hot execution paths completely untainted by runtime reflection.
+## 🧅 Pipeline Execution Flow
+
+When multiple pipeline behaviors are registered, they form a Russian-Doll (Onion) pipeline wrapping the final request handler:
+
+```
+Request ──> PerformanceBehavior (Start)
+              ──> LoggingBehavior (Start)
+                    ──> ValidationBehavior (Start)
+                          ──> TransactionBehavior (Start)
+                                ──> RequestHandler.Handle() ──> [Result]
+                          <── TransactionBehavior (Commit)
+                    <── ValidationBehavior (End)
+              <── LoggingBehavior (End)
+<── PerformanceBehavior (Stop) ── Return Result
+```
+
+* **Short-circuiting**: A behavior can return early without calling `await next(cancellationToken)`.
+* **Error Boundary**: A behavior can wrap `await next(...)` in a `try/catch` to log, roll back transactions, or return fallback responses.
+* **Zero-Allocation Fast-Path**: If no pipeline behaviors are registered, the engine automatically executes the terminal handler directly with zero extra delegate allocations.
+
+---
+
+## 🏛️ Architectural Contracts
+
+| Contract | Purpose | Scope |
+|:---|:---|:---|
+| **[`ISender`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/ISender.cs)** | Point-to-Point message dispatcher (1:1 request/response or void command). | Caller dependency |
+| **[`IPublisher`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IPublisher.cs)** | Broadcast event dispatcher (1:N sequential notifications). | Caller dependency |
+| **[`IMediator`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IMediator.cs)** | Unified facade interface combining both `ISender` and `IPublisher`. | Caller dependency |
+| **[`IRequest<TResponse>`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IRequest.cs)** | Request returning a strongly-typed data payload. | Message contract |
+| **[`IRequest`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IRequest.cs)** | Void command returning `Task` (internally mapped to `IRequest<Unit>`). | Message contract |
+| **[`IPipelineBehavior<TRequest, TResponse>`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/IPipelineBehavior.cs)** | Middleware node intercepting request execution. | Middleware contract |
+| **[`Unit`](file:///D:/repos/Aarkam.IO/Packages/Aarkam.Mediator/Aarkam.Mediator/src/Aarkam.Mediator/Unit.cs)** | High-performance, zero-allocation value type representing `void`. | Value type struct |
+
+---
+
+## 📖 Comprehensive Documentation
+
+For detailed architectural deep-dives, Clean Architecture best practices, and advanced configuration guides, please refer to the:
+👉 **[Comprehensive Documentation Guide](docs/DOCUMENTATION_GUIDE.md)**
+
+---
 
 ## 🛡️ License
 
-Distributed under the **MIT License**. See `LICENSE` for details.
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for details.
+
+Copyright (c) 2026 Mohamed Mohamed Elhelbawi (Aarkam).

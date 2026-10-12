@@ -59,12 +59,69 @@ namespace Aarkam.Mediator
             return services;
         }
 
+        /// <summary>
+        /// Registers a pipeline behavior into the service collection.
+        /// Supports open-generic definitions (e.g. <c>typeof(LoggingBehavior&lt;,&gt;)</c>) and closed-generic types.
+        /// </summary>
+        /// <param name="services">The service collection to register into.</param>
+        /// <param name="behaviorType">The implementation type of the pipeline behavior.</param>
+        /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Scoped"/>.</param>
+        /// <returns>The service collection for chaining.</returns>
+        public static IServiceCollection AddPipelineBehavior(
+            this IServiceCollection services,
+            Type behaviorType,
+            ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(behaviorType);
+
+            if (behaviorType.IsGenericTypeDefinition)
+            {
+                services.Add(new ServiceDescriptor(typeof(IPipelineBehavior<,>), behaviorType, lifetime));
+            }
+            else
+            {
+                var matchingInterfaces = behaviorType.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>));
+
+                foreach (var iface in matchingInterfaces)
+                {
+                    services.Add(new ServiceDescriptor(iface, behaviorType, lifetime));
+                }
+            }
+
+            return services;
+        }
+
+        /// <summary>
+        /// Registers a pipeline behavior into the service collection with an explicit service interface type.
+        /// </summary>
+        /// <param name="services">The service collection to register into.</param>
+        /// <param name="serviceType">The service interface type (typically <c>typeof(IPipelineBehavior&lt;,&gt;)</c>).</param>
+        /// <param name="implementationType">The implementation type of the pipeline behavior.</param>
+        /// <param name="lifetime">The service lifetime. Defaults to <see cref="ServiceLifetime.Scoped"/>.</param>
+        /// <returns>The service collection for chaining.</returns>
+        public static IServiceCollection AddPipelineBehavior(
+            this IServiceCollection services,
+            Type serviceType,
+            Type implementationType,
+            ServiceLifetime lifetime = ServiceLifetime.Scoped)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(serviceType);
+            ArgumentNullException.ThrowIfNull(implementationType);
+
+            services.Add(new ServiceDescriptor(serviceType, implementationType, lifetime));
+            return services;
+        }
+
         private static void RegisterRequestHandlers(
             IServiceCollection services,
             Type handlerType,
             Dictionary<Type, RequestHandlerWrapper> requestHandlers)
         {
             var interfaces = handlerType.GetInterfaces();
+            var hasVoidHandler = interfaces.Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<>));
 
             foreach (var iface in interfaces)
             {
@@ -78,6 +135,12 @@ namespace Aarkam.Mediator
                     var typeArgs = iface.GetGenericArguments();
                     var requestType = typeArgs[0];
                     var responseType = typeArgs[1];
+
+                    // If this handler implements void-style IRequestHandler<TRequest>, skip here so branch 2 handles it cleanly
+                    if (hasVoidHandler && responseType == typeof(Unit))
+                    {
+                        continue;
+                    }
 
                     ValidateUniqueHandlerConstraint(requestType, requestHandlers);
 
@@ -98,10 +161,29 @@ namespace Aarkam.Mediator
                         ValidateUniqueHandlerConstraint(requestType, requestHandlers);
 
                         services.AddScoped(iface, handlerType);
+                        services.AddScoped(typeof(IRequestHandler<,>).MakeGenericType(requestType, typeof(Unit)), handlerType);
 
                         var wrapperType = typeof(RequestHandlerWrapperImpl<,>).MakeGenericType(requestType, typeof(Unit));
                         requestHandlers[requestType] = (RequestHandlerWrapper)Activator.CreateInstance(wrapperType)!;
                     }
+                }
+            }
+        }
+
+        private static void RegisterPipelineBehaviors(
+            IServiceCollection services,
+            Type behaviorType)
+        {
+            var interfaces = behaviorType.GetInterfaces();
+
+            foreach (var iface in interfaces)
+            {
+                if (!iface.IsGenericType) continue;
+
+                var genericDef = iface.GetGenericTypeDefinition();
+                if (genericDef == typeof(IPipelineBehavior<,>))
+                {
+                    services.AddScoped(iface, behaviorType);
                 }
             }
         }
@@ -119,15 +201,25 @@ namespace Aarkam.Mediator
                 var notificationType = iface.GetGenericArguments()[0];
 
                 // Register standard decoupled scoped interface lookup hooks inside the system container
-                services.AddScoped(iface, handlerType);
+                services.AddScoped(handlerType);
+                services.AddScoped(iface, sp => sp.GetRequiredService(handlerType));
 
                 // Build a pre-compiled reflection factory invocation delegate to protect runtime execution pathways
                 var methodInfo = iface.GetMethod(nameof(INotificationHandler<INotification>.Handle));
+                var targetHandlerType = handlerType;
 
                 Func<object, IServiceProvider, CancellationToken, Task> factoryDelegate = (notificationInstance, serviceProvider, cancellationToken) =>
                 {
-                    var resolvedSubscriberInstance = serviceProvider.GetRequiredService(iface);
-                    return (Task)methodInfo!.Invoke(resolvedSubscriberInstance, new[] { notificationInstance, cancellationToken })!;
+                    var resolvedSubscriberInstance = serviceProvider.GetRequiredService(targetHandlerType);
+                    try
+                    {
+                        return (Task)methodInfo!.Invoke(resolvedSubscriberInstance, new[] { notificationInstance, cancellationToken })!;
+                    }
+                    catch (System.Reflection.TargetInvocationException tie) when (tie.InnerException is not null)
+                    {
+                        System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+                        throw;
+                    }
                 };
 
                 var wrapperInstance = new NotificationHandlerWrapper(factoryDelegate);

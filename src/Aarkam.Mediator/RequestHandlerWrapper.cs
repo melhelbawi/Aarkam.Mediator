@@ -1,4 +1,6 @@
-﻿namespace Aarkam.Mediator
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aarkam.Mediator
 {
     /// <summary>
     /// Serves as the non-generic abstract execution bridge for request processing pipelines inside WhaleMediator.
@@ -57,11 +59,34 @@
             IServiceProvider serviceProvider,
             CancellationToken cancellationToken)
         {
-            // Resolve handlers and behaviors perfectly with 100% type safety!
-            var handler = (IRequestHandler<TRequest, TResponse>)serviceProvider.GetService(typeof(IRequestHandler<TRequest, TResponse>))!;
-            var typedRequest = (TRequest)request;
+            var handler = serviceProvider.GetService(typeof(IRequestHandler<TRequest, TResponse>)) as IRequestHandler<TRequest, TResponse>;
+            if (handler is null)
+            {
+                throw new InvalidOperationException($"No handler registered for request type {typeof(TRequest).FullName}");
+            }
 
-            var result = await handler.Handle(typedRequest, cancellationToken).ConfigureAwait(false);
+            var typedRequest = (TRequest)request;
+            var behaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>();
+            var behaviorList = behaviors as IList<IPipelineBehavior<TRequest, TResponse>> ?? behaviors?.ToList();
+
+            // Zero-allocation fast-path when no pipeline behaviors are configured
+            if (behaviorList is null || behaviorList.Count == 0)
+            {
+                var directResult = await handler.Handle(typedRequest, cancellationToken).ConfigureAwait(false);
+                return (TTargetResponse)(object)directResult!;
+            }
+
+            // Build the execution pipeline chain terminating at the request handler
+            RequestHandlerDelegate<TResponse> pipeline = ct => handler.Handle(typedRequest, ct);
+
+            for (int i = behaviorList.Count - 1; i >= 0; i--)
+            {
+                var currentBehavior = behaviorList[i];
+                var next = pipeline;
+                pipeline = ct => currentBehavior.HandleAsync(typedRequest, next, ct);
+            }
+
+            var result = await pipeline(cancellationToken).ConfigureAwait(false);
 
             // This direct cast is ultra-fast and completely bypasses boxing penalties!
             return (TTargetResponse)(object)result!;
@@ -76,5 +101,4 @@
             return Handle<Unit>(request, serviceProvider, cancellationToken);
         }
     }
-
 }

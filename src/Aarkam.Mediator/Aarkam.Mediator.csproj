@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<!-- Multi Target -->
@@ -11,7 +11,7 @@
 
 		<!-- NuGet Package Metadata -->
 		<IsPackable>true</IsPackable>
-		<Version>1.0.03</Version>
+		<Version>1.0.04</Version>
 		<Company>Aarkam</Company>
 		<Authors>Mohamed Mohamed Elhelbawi</Authors>
 		<Title>Aarkam.Mediator</Title>
@@ -33,7 +33,14 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<PackageOutputPath>C:\Nuget</PackageOutputPath>
 
+		<!-- Package Readme -->
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 	<PropertyGroup>
 		<Copyright>Copyright © $([System.DateTime]::Now.Year) Aarkam</Copyright>

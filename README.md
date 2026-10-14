@@ -1,7 +1,7 @@
 # Aarkam.Mediator
 
 [![NuGet Version](https://img.shields.io/nuget/v/Aarkam.Mediator.svg?style=flat-square&color=blue)](https://www.nuget.org/packages/Aarkam.Mediator/)
-[![Target Frameworks](https://img.shields.io/badge/.NET-6.0%20%7C%208.0%20%7C%2010.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/)
+[![Target Frameworks](https://img.shields.io/badge/.NET-6.0%20%7C%207.0%20%7C%208.0%20%7C%209.0%20%7C%2010.0-512BD4?style=flat-square)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
 
 **High-performance, lightweight Mediator implementation for .NET** focused on zero runtime allocations, ultra-low latency, and modern Ahead-Of-Time (AOT) compilation compatibility.

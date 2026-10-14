@@ -30,7 +30,7 @@
 
 ## 1. Introduction & Design Philosophy
 
-`Aarkam.Mediator` is a high-throughput, allocation-conscious mediator library designed for modern .NET (targeting .NET 6.0, .NET 8.0, and .NET 10.0+).
+`Aarkam.Mediator` is a high-throughput, allocation-conscious mediator library designed for modern .NET (targeting .NET 6.0, .NET 7.0, .NET 8.0, .NET 9.0, and .NET 10.0+).
 
 ### The Problem with Traditional Mediation
 Traditional mediator implementations often introduce non-trivial overhead on hot execution paths:

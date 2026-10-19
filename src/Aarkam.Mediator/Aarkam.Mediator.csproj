@@ -11,15 +11,15 @@
 
 		<!-- NuGet Package Metadata -->
 		<IsPackable>true</IsPackable>
-		<Version>1.0.05</Version>
-		<Company>Aarkam</Company>
+		<Version>1.0.6</Version>
+		<Company>Aarkam IO</Company>
 		<Authors>Mohamed Mohamed Elhelbawi</Authors>
 		<Title>Aarkam.Mediator</Title>
 		<Description>High-performance, lightweight Mediator implementation for .NET focused on zero runtime allocations, ultra-low latency, and modern ahead-of-time (AOT) compilation compatibility.</Description>
 		<PackageTags>mediator cqrs mediatr performance high-performance aot zero-allocation dotnet</PackageTags>
 
 		<!-- Project and Repository URLs -->
-		<PackageProjectUrl>https://github.com/melhelbawi/Aarkam.Mediator</PackageProjectUrl>
+		<PackageProjectUrl>https://aarkam.io</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/melhelbawi/Aarkam.Mediator</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
 
